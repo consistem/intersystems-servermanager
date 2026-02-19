@@ -1,12 +1,12 @@
 {
   "name": "servermanager",
-  "displayName": "InterSystems Server Manager",
+  "displayName": "Consistem Server Manager",
   "version": "3.12.1-SNAPSHOT",
   "publisher": "consistem-sistemas",
-  "description": "Define connections to InterSystems servers. Browse and manage those servers.",
+  "description": "Define connections to InterSystems servers, based on the official project and maintained by Consistem.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/intersystems-community/intersystems-servermanager"
+    "url": "https://github.com/consistem/intersystems-servermanager"
   },
   "license": "MIT",
   "keywords": [

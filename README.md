@@ -1,10 +1,28 @@
-# InterSystems Server Manager
+<p align="center">
+  <img alt="Consistem" src="https://raw.githubusercontent.com/consistem/intersystems-servermanager/master/images/logo-consistem-horizontal.png" width="280" />
+</p>
+
+# Consistem Server Manager
+
+[![Consistem](https://img.shields.io/badge/Consistem-Website-brightgreen)](https://consistem.com.br/)
+[![](https://img.shields.io/badge/InterSystems-IRIS-blue.svg)](https://www.intersystems.com/products/intersystems-iris/)
+[![](https://img.shields.io/badge/InterSystems-Cach%C3%A9-blue.svg)](https://www.intersystems.com/products/cache/)
+[![](https://img.shields.io/badge/InterSystems-Ensemble-blue.svg)](https://www.intersystems.com/products/ensemble/)
 
 > **Note:** The best way to install and use this extension is by installing the [InterSystems ObjectScript Extension Pack](https://marketplace.visualstudio.com/items?itemName=intersystems-community.objectscript-pack) and following the [documentation here](https://docs.intersystems.com/components/csp/docbook/DocBook.UI.Page.cls?KEY=GVSCO).
 
-InterSystems Server Manager is a Visual Studio Code extension for defining connections to [InterSystems](https://www.intersystems.com/) servers. These definitions can used by other VS Code extensions when they make connections. One example is the [ObjectScript extension](https://github.com/intersystems-community/vscode-objectscript) for code editing. The [Launch WebTerminals](https://marketplace.visualstudio.com/items?itemName=georgejames.webterminal-vscode) extension is another.
+Consistem Server Manager is a Visual Studio Code extension for defining connections to [InterSystems](https://www.intersystems.com/) servers. These definitions can be used by other VS Code extensions when they make connections. One example is the [Consistem ObjectScript extension](https://github.com/consistem/vscode-objectscript) for code editing. The [Launch WebTerminals](https://marketplace.visualstudio.com/items?itemName=georgejames.webterminal-vscode) extension is another.
 
-See the [CHANGELOG](https://marketplace.visualstudio.com/items/intersystems-community.servermanager/changelog) for details of changes in each release.
+## About this fork
+
+This project is a fork of the official [`intersystems-community/intersystems-servermanager`](https://github.com/intersystems-community/intersystems-servermanager) repository.
+
+Originally maintained by [InterSystems&reg;](http://www.intersystems.com), this fork is maintained by [Consistem&reg;](https://consistem.com.br/).
+
+It preserves all features of the upstream project and adds integrations, adjustments, and internal standards adopted by Consistem,
+with a focus on meeting the specific needs of our development ecosystem.
+
+See the [CHANGELOG](https://marketplace.visualstudio.com/items/consistem-sistemas.servermanager/changelog) for changes in each release.
 
 # New in Version 3.12 - February 2026
 - Require VS Code 1.109+.
@@ -15,10 +33,12 @@ See the [CHANGELOG](https://marketplace.visualstudio.com/items/intersystems-comm
 - Support running in a web environment.
 
 # New in Version 3.8 - November 2024
+
 - Updated the authentication provider to resolve overprompting caused by a VS Code 1.93 change.
 - Added a new function (`getAccount`) to the API surface as a helper for extensions leveraging the authentication provider.
 
 # New in Version 3.6 - January 2024
+
 The view container was renamed and given a new icon as part of work integrating the ObjectScript extension's views with it.
 
 # New in Version 3.4 - July 2023
@@ -28,8 +48,8 @@ The view container was renamed and given a new icon as part of work integrating 
 - A new "Web Applications" tree within each namespace node provides a convenient way to create a workspace folder in which to edit web application files.
 
 > We have removed support for version 2's password storage mechanism. If you have been using the `"intersystemsServerManager.authentication.provider": "none"` setting this will no longer have any effect and your connections will behave as though no passwords have been stored. You can migrate stored passwords by downgrading to Server Manager 3.2 and running the `Migrate Passwords` command.
-> 
->  VS Code 1.82 (August 2023) is scheduled to drop support for the keytar package used by the v2 mechanism, so you should perform v2 password migration before upgrading to that version.
+>
+> VS Code 1.82 (August 2023) is scheduled to drop support for the keytar package used by the v2 mechanism, so you should perform v2 password migration before upgrading to that version.
 
 # New in Version 3.2 - October 2022
 
@@ -215,30 +235,37 @@ It might also define Server Manager as a dependency in its `package.json` like t
 Alternatively the `activate` method of XYZ can detect whether the extension is already available, then offer to install it if not:
 
 ```ts
-  import * as serverManager from '@intersystems-community/intersystems-servermanager';
+import * as serverManager from "@intersystems-community/intersystems-servermanager";
 ```
+
 ...
+
 ```ts
-  let extension = vscode.extensions.getExtension(serverManager.EXTENSION_ID);
-  if (!extension) {
+let extension = vscode.extensions.getExtension(serverManager.EXTENSION_ID);
+if (!extension) {
 	// Optionally ask user for permission
 	// ...
 
-	await vscode.commands.executeCommand('workbench.extensions.installExtension', serverManager.EXTENSION_ID);
+	await vscode.commands.executeCommand(
+		"workbench.extensions.installExtension",
+		serverManager.EXTENSION_ID,
+	);
 	extension = vscode.extensions.getExtension(serverManager.EXTENSION_ID);
-  }
-  if (!extension.isActive) {
-    await extension.activate();
-  }
+}
+if (!extension.isActive) {
+	await extension.activate();
+}
 ```
 
 XYZ can then use the extension's API to obtain the properties of a named server definition:
 
 ```ts
-  const serverManagerApi: serverManager.ServerManagerAPI = extension.exports;
-  if (serverManagerApi && serverManagerApi.getServerSpec) { // defensive coding
-	const serverSpec: serverManager.IServerSpec | undefined = await serverManagerApi.getServerSpec(serverName);
-  }
+const serverManagerApi: serverManager.ServerManagerAPI = extension.exports;
+if (serverManagerApi && serverManagerApi.getServerSpec) {
+	// defensive coding
+	const serverSpec: serverManager.IServerSpec | undefined =
+		await serverManagerApi.getServerSpec(serverName);
+}
 ```
 
 The `username` and `password` properties will only be present if defined in the settings JSON. Storage of `password` there is deprecated and strongly discouraged.
@@ -246,32 +273,46 @@ The `username` and `password` properties will only be present if defined in the 
 To obtain the password with which to connect, use code like this which will also prompt for a username if absent:
 
 ```ts
-  if (typeof serverSpec.password === 'undefined') {
-    const scopes = [serverSpec.name, serverSpec.username || ''];
+if (typeof serverSpec.password === "undefined") {
+	const scopes = [serverSpec.name, serverSpec.username || ""];
 	const account = serverManagerApi.getAccount(serverSpec);
-    let session = await vscode.authentication.getSession(serverManager.AUTHENTICATION_PROVIDER, scopes, { silent: true, account });
-    if (!session) {
-      session = await vscode.authentication.getSession(serverManager.AUTHENTICATION_PROVIDER, scopes, { createIfNone: true, account });
-    }
-    if (session) {
-	  serverSpec.username = session.scopes[1].toLowerCase() === "unknownuser" ? "" : session.scopes[1];
-      serverSpec.password = session.accessToken;
-    }
-  }
+	let session = await vscode.authentication.getSession(
+		serverManager.AUTHENTICATION_PROVIDER,
+		scopes,
+		{ silent: true, account },
+	);
+	if (!session) {
+		session = await vscode.authentication.getSession(
+			serverManager.AUTHENTICATION_PROVIDER,
+			scopes,
+			{ createIfNone: true, account },
+		);
+	}
+	if (session) {
+		serverSpec.username =
+			session.scopes[1].toLowerCase() === "unknownuser"
+				? ""
+				: session.scopes[1];
+		serverSpec.password = session.accessToken;
+	}
+}
 ```
 
 To offer the user a quickpick of servers:
 
 ```ts
-  const serverName: string = await serverManagerApi.pickServer();
+const serverName: string = await serverManagerApi.pickServer();
 ```
 
 To obtain an array of server names:
 
 ```ts
-  const allServerNames: serverManager.IServerName[] = await serverManagerApi.getServerNames();
+const allServerNames: serverManager.IServerName[] =
+	await serverManagerApi.getServerNames();
 ```
+
 For up-to-date details of the API, including result types and available parameters, review the source code of the extension's `activate` method [here](https://github.com/intersystems-community/intersystems-servermanager/blob/master/src/extension.ts).
 
 ---
+
 <div>Activity Bar icon made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
