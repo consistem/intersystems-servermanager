@@ -10,7 +10,8 @@ import { AUTHENTICATION_PROVIDER, ServerManagerAuthenticationProvider } from "./
 import { logout, serverSessions } from "./makeRESTRequest";
 import { NamespaceTreeItem, ProjectTreeItem, ServerManagerView, ServerTreeItem, SMTreeItem, WebAppTreeItem } from "./ui/serverManagerView";
 
-export const extensionId = "consistem-sistemas.servermanager";
+export const extensionId = "intersystems-community.servermanager";
+export const EXTENSION_ID = "consistem-sistemas.servermanager";
 export const OBJECTSCRIPT_EXTENSIONID = "consistem-sistemas.vscode-objectscript";
 
 export let globalState: vscode.Memento;
@@ -231,7 +232,7 @@ export function commonActivate(context: vscode.ExtensionContext, view: ServerMan
 					{ preview: false, selection: new vscode.Range(0, 0, 0, 0) }
 				).then(revealServer, () => {
 					// If there's an error, fall back to showing the UI
-					vscode.commands.executeCommand("workbench.action.openSettings", `@ext:${extensionId}`);
+					vscode.commands.executeCommand("workbench.action.openSettings", `@ext:${EXTENSION_ID}`);
 				});
 			} else if (server && servers?.workspaceValue?.hasOwnProperty(server.name)) {
 				// Open the workspace settings file
@@ -241,7 +242,7 @@ export function commonActivate(context: vscode.ExtensionContext, view: ServerMan
 				vscode.commands.executeCommand("workbench.action.openSettingsJson", openJSONArg).then(revealServer);
 			} else {
 				// Just show the UI
-				vscode.commands.executeCommand("workbench.action.openSettings", `@ext:${extensionId}`);
+				vscode.commands.executeCommand("workbench.action.openSettings", `@ext:${EXTENSION_ID}`);
 			}
 		}),
 		vscode.commands.registerCommand(`${extensionId}.setIconRed`, (server?: ServerTreeItem) => {
