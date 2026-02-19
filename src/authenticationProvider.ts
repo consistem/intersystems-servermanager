@@ -14,11 +14,12 @@ import {
 	workspace,
 } from "vscode";
 import { ServerManagerAuthenticationSession } from "./authenticationSession";
-import { globalState } from "./commonActivate";
+import { EXTENSION_ID, globalState } from "./commonActivate";
 import { getServerSpec } from "./api/getServerSpec";
 import { logout, makeRESTRequest } from "./makeRESTRequest";
 
 export const AUTHENTICATION_PROVIDER = "intersystems-server-credentials";
+
 const AUTHENTICATION_PROVIDER_LABEL = "InterSystems Server Credentials";
 
 export class ServerManagerAuthenticationProvider implements AuthenticationProvider, Disposable {
@@ -40,7 +41,7 @@ export class ServerManagerAuthenticationProvider implements AuthenticationProvid
 	private _sessions: ServerManagerAuthenticationSession[] = [];
 	private _checkedSessions: ServerManagerAuthenticationSession[] = [];
 
-	private _serverManagerExtension = extensions.getExtension("consistem-sistemas.servermanager");
+	private _serverManagerExtension = extensions.getExtension(EXTENSION_ID);
 
 	private _onDidChangeSessions = new EventEmitter<AuthenticationProviderAuthenticationSessionsChangeEvent>();
 	get onDidChangeSessions(): Event<AuthenticationProviderAuthenticationSessionsChangeEvent> {

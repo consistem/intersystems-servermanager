@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { Uri } from "vscode";
 import { IServerSpec } from "@intersystems-community/intersystems-servermanager";
-import { extensionId } from "../commonActivate";
+import { EXTENSION_ID } from "../commonActivate";
 import { makeRESTRequest } from "../makeRESTRequest";
 
 export enum BrowserTarget {
@@ -22,7 +22,7 @@ export async function getPortalUriWithToken(
 ): Promise<Uri | undefined> {
 
 	// Use our own API so that the Recent folder updates with our activity
-	const myApi = vscode.extensions.getExtension(extensionId)?.exports;
+	const myApi = vscode.extensions.getExtension(EXTENSION_ID)?.exports;
 
 	const spec: IServerSpec | undefined = await myApi.getServerSpec(name, scope);
 	if (typeof spec !== "undefined") {
