@@ -1,5 +1,5 @@
 {
-  "name": "@intersystems-community/intersystems-servermanager",
+  "name": "@consistem-sistemas/consistem-servermanager",
   "version": "3.10.2",
   "description": "InterSystems Server Manager VS Code extension API interfaces and constants",
   "types": "index.d.ts",
