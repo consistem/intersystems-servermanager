@@ -22,7 +22,7 @@ Originally maintained by [InterSystems&reg;](http://www.intersystems.com), this 
 It preserves all features of the upstream project and adds integrations, adjustments, and internal standards adopted by Consistem,
 with a focus on meeting the specific needs of our development ecosystem.
 
-See the [CHANGELOG](https://marketplace.visualstudio.com/items/consistem-sistemas.servermanager/changelog) for changes in each release.
+See the [CHANGELOG](https://marketplace.visualstudio.com/items/consistem-sistemas.consistem-servermanager/changelog) for changes in each release.
 
 # New in Version 3.12 - February 2026
 - Require VS Code 1.109+.

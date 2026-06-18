@@ -11,8 +11,8 @@ import { logout, serverSessions } from "./makeRESTRequest";
 import { NamespaceTreeItem, ProjectTreeItem, ServerManagerView, ServerTreeItem, SMTreeItem, WebAppTreeItem } from "./ui/serverManagerView";
 
 export const extensionId = "intersystems-community.servermanager";
-export const EXTENSION_ID = "consistem-sistemas.servermanager";
-export const OBJECTSCRIPT_EXTENSIONID = "consistem-sistemas.vscode-objectscript";
+export const EXTENSION_ID = "consistem-sistemas.consistem-servermanager";
+export const OBJECTSCRIPT_EXTENSIONID = "consistem-sistemas.consistem-vscode-objectscript";
 
 export let globalState: vscode.Memento;
 
