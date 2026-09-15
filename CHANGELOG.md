@@ -1,3 +1,25 @@
+## 3.14.2 (02-Sep-2026)
+* Attempt unauthenticated request before prompting when no credentials are configured (#352)
+* Update dependencies
+
+## 3.14.1 (18-Aug-2026)
+* Passwords in plaintext settings are not passed directly to client extensions (#347)
+
+## 3.14.0 (11-Aug-2026)
+* Support OAuth2 for authorizing with InterSystems servers (#335, #344)
+* Allow users to enter scheme, host, port, and path prefix as one URL when creating a server definition through the UI (#342)
+* Update dependencies
+
+## 3.12.3 (01-Jun-2026)
+* Web Applications: use a different icon for the namespace default app (#328)
+* Update dependencies (#326, #329, #330, #332).
+
+## 3.12.2 (14-Apr-2026)
+* Update dependencies (#324).
+
+## 3.12.1 (08-Apr-2026)
+* Update dependencies (#316, #317, #318, #319, #321).
+
 ## 3.12.0 (23-Feb-2026)
 Minimum VS Code version is now 1.109.0.
 * Launch Management Portal pages in Integrated Browser (#310).
