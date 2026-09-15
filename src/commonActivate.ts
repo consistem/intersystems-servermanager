@@ -1,5 +1,5 @@
+import { Authorization, IServerName, IServerSpec, ResolvedAuthorization, ServerManagerAPI } from "@intersystems-community/intersystems-servermanager";
 import * as vscode from "vscode";
-import { IServerName, IServerSpec } from "@intersystems-community/intersystems-servermanager";
 import { addServer } from "./api/addServer";
 import { getPortalUri } from "./api/getPortalUri";
 import { getServerNames } from "./api/getServerNames";
@@ -7,7 +7,9 @@ import { getServerSpec } from "./api/getServerSpec";
 import { getServerSummary } from "./api/getServerSummary";
 import { pickServer } from "./api/pickServer";
 import { AUTHENTICATION_PROVIDER, ServerManagerAuthenticationProvider } from "./authenticationProvider";
+import { initLogger } from "./logger";
 import { logout, serverSessions } from "./makeRESTRequest";
+import { OAuth2Config } from "./serverSetting";
 import { NamespaceTreeItem, ProjectTreeItem, ServerManagerView, ServerTreeItem, SMTreeItem, WebAppTreeItem } from "./ui/serverManagerView";
 
 export const extensionId = "intersystems-community.servermanager";
@@ -21,15 +23,127 @@ export function getAccountFromParts(serverName: string, userName?: string): vsco
 	return accountId ? { id: accountId, label: `${userName} on ${serverName}` } : undefined;
 }
 
+export class BasicAuthorization implements Authorization {
+	#username?: string;
+	#password?: string;
+	constructor(username?: string, password?: string) {
+		this.#username = username;
+		this.#password = password;
+	}
+
+	public get username(): string {
+		return this.#username || "";
+	}
+
+	public get password(): string | undefined {
+		return this.#password;
+	}
+
+	public get accessToken(): string | undefined {
+		return this.#password;
+	}
+
+	public get httpAuthorizationHeader(): string {
+		return `Basic ${Buffer.from(`${this.#username}:${this.#password}`).toString("base64")}`;
+	}
+
+	public resolved(): this is ResolvedAuthorization {
+		return this.username !== "" && this.#password !== undefined;
+	}
+
+	public resolve({ accessToken, username }): this is ResolvedAuthorization {
+		this.#username = username ?? this.#username;
+		this.#password = accessToken ?? this.#password;
+		return this.resolved();
+	}
+
+	public clear(): asserts this is Authorization {
+		this.#password = undefined;
+	}
+
+	public get credentials(): { auth: { username: string; password: string }; headers?: Record<string, string> } {
+		return {
+			auth: {
+				username: this.username,
+				password: this.password!,
+			},
+			headers: {},
+		};
+	}
+
+	public clone(): BasicAuthorization {
+		return new BasicAuthorization(this.#username, this.#password);
+	}
+}
+
+export class OAuth2Authorization implements Authorization {
+	#username?: string;
+	#bearer?: string;
+	constructor(public readonly oauth2: OAuth2Config, bearer?: string) {
+		this.#bearer = bearer;
+	}
+
+	public get httpAuthorizationHeader(): string | undefined {
+		if (this.resolved()) {
+			return `Bearer ${this.#bearer}`;
+		}
+	}
+
+	public resolved(): this is ResolvedAuthorization {
+		return this.#bearer ? true : false;
+	}
+
+	public resolve({ accessToken, username }): this is ResolvedAuthorization {
+		// empty accessTokens are ignored.
+		if (accessToken) {
+			this.#bearer = accessToken;
+		}
+		this.#username = username ?? this.#username;
+		return this.resolved();
+	}
+
+	public clear(): asserts this is Authorization {
+		this.#bearer = undefined;
+	}
+
+	public get username(): string {
+		return this.#username ?? "*OAuth2*";
+	}
+
+	public get password(): undefined {
+		return undefined;
+	}
+
+	public get accessToken(): string | undefined {
+		return this.#bearer;
+	}
+
+	public get credentials(): { auth?: { username: string; password: string }; headers: Record<string, string> } | undefined {
+		if (this.resolved()) {
+			return {
+				headers: {
+					Authorization: this.httpAuthorizationHeader,
+				},
+			};
+		}
+	}
+
+	public clone(): OAuth2Authorization {
+		return new OAuth2Authorization(this.oauth2, this.#bearer);
+	}
+}
+
 /**
  * Handle all activation requirements that are shared by `extension.ts` and `web-extension.ts`.
  * Returns our exported API.
  */
-export function commonActivate(context: vscode.ExtensionContext, view: ServerManagerView): any {
+export function commonActivate(context: vscode.ExtensionContext, view: ServerManagerView): ServerManagerAPI {
 	const _onDidChangePassword = new vscode.EventEmitter<string>();
 
 	// Other parts of this extension will use this to persist state
 	globalState = context.globalState;
+
+	initLogger(context);
 
 	/** Helper function for adding a workspace folder */
 	const addWorkspaceFolderAsync = async (readonly: boolean, csp: boolean, namespaceTreeItem?: ServerTreeItem, project?: string, webApp?: string) => {
@@ -38,8 +152,8 @@ export function commonActivate(context: vscode.ExtensionContext, view: ServerMan
 			if (pathParts && pathParts.length === 4) {
 				const serverName = pathParts[1];
 				const namespace = pathParts[3];
-				const serverSpec = await getServerSpec(serverName);
-				if (serverSpec) {
+				const serverSetting = await getServerSpec(serverName);
+				if (serverSetting) {
 					const isfsExtension = vscode.extensions.getExtension(OBJECTSCRIPT_EXTENSIONID);
 					if (isfsExtension) {
 						if (!isfsExtension.isActive) {
@@ -54,7 +168,7 @@ export function commonActivate(context: vscode.ExtensionContext, view: ServerMan
 						return;
 					}
 
-					const params = [csp ? "csp" : "", project ? `project=${project}` : ""].filter(e => e != "").join("&");
+					const params = [csp ? "csp" : "", project ? `project=${project}` : ""].filter((e) => e != "").join("&");
 					const uri = vscode.Uri.parse(`isfs${readonly ? "-readonly" : ""}://${serverName}:${namespace}${csp && webApp ? webApp : "/"}${params ? `?${params}` : ""}`);
 					if ((vscode.workspace.workspaceFolders || []).filter((workspaceFolder) => workspaceFolder.uri.toString() === uri.toString()).length === 0) {
 						const label = `${project ? `${project} - ${serverName}:${namespace}` : !csp ? `${serverName}:${namespace}` : ["", "/"].includes(uri.path) ? `${serverName}:${namespace} web files` : `${serverName} (${uri.path})`}${readonly && project == undefined ? " (read-only)" : ""}`;
@@ -127,10 +241,10 @@ export function commonActivate(context: vscode.ExtensionContext, view: ServerMan
 					options.push(
 						{ label: "Workspace", detail: vscode.workspace.workspaceFile.toString(true), target: vscode.ConfigurationTarget.Workspace },
 						...vscode.workspace.workspaceFolders
-							.filter(f => !["isfs", "isfs-readonly"].includes(f.uri.scheme))
-							.map(f => {
+							.filter((f) => !["isfs", "isfs-readonly"].includes(f.uri.scheme))
+							.map((f) => {
 								return { label: f.name, detail: f.uri.toString(true), scope: f, target: vscode.ConfigurationTarget.WorkspaceFolder };
-							})
+							}),
 					);
 				} else {
 					// The workspace is a single local folder, so that is the only other option
@@ -138,9 +252,9 @@ export function commonActivate(context: vscode.ExtensionContext, view: ServerMan
 				}
 				const choice = await vscode.window.showQuickPick(options, {
 					ignoreFocusOut: true,
-					title: "Pick a settings scope in which to add the server definition"
+					title: "Pick a settings scope in which to add the server definition",
 				});
-				if (!choice) return;
+				if (!choice) { return; }
 				scope = choice.scope;
 				target = choice.target;
 			} else {
@@ -200,8 +314,8 @@ export function commonActivate(context: vscode.ExtensionContext, view: ServerMan
 		vscode.commands.registerCommand(`${extensionId}.editSettings`, (server?: ServerTreeItem) => {
 			// Attempt to open the correct JSON file
 			server = server instanceof ServerTreeItem ? server : undefined;
-			const scope: vscode.ConfigurationScope = server?.params?.serverSummary?.scope;
-			const servers = vscode.workspace.getConfiguration("intersystems", scope).inspect<{ [key: string]: any }>("servers");
+			const scope = server?.params?.serverSummary?.scope;
+			const servers = vscode.workspace.getConfiguration("intersystems", scope).inspect("servers");
 			const openJSONArg = { revealSetting: { key: "intersystems.servers" } };
 			const revealServer = (): void => {
 				// Find the start of the server's settings block
@@ -223,13 +337,13 @@ export function commonActivate(context: vscode.ExtensionContext, view: ServerMan
 				}
 			};
 			// Only WorkspaceFolder objects have an index.
-			if (server && servers?.workspaceFolderValue?.hasOwnProperty(server.name) && typeof (<vscode.WorkspaceFolder>scope)?.index == "number") {
+			if (server && servers?.workspaceFolderValue?.hasOwnProperty(server.name) && typeof (scope as vscode.WorkspaceFolder)?.index == "number") {
 				// Open the workspace folder settings file. Need to use showTextDocument because the
 				// "workbench.action.openFolderSettingsFile" command always prompts the user.
 				vscode.window.showTextDocument(
-					vscode.Uri.joinPath((<vscode.WorkspaceFolder>scope).uri, ".vscode", "settings.json"),
+					vscode.Uri.joinPath((scope as vscode.WorkspaceFolder).uri, ".vscode", "settings.json"),
 					// Need these two properties to mimic the workbench commands' behavior
-					{ preview: false, selection: new vscode.Range(0, 0, 0, 0) }
+					{ preview: false, selection: new vscode.Range(0, 0, 0, 0) },
 				).then(revealServer, () => {
 					// If there's an error, fall back to showing the UI
 					vscode.commands.executeCommand("workbench.action.openSettings", `@ext:${EXTENSION_ID}`);
@@ -314,16 +428,16 @@ export function commonActivate(context: vscode.ExtensionContext, view: ServerMan
 				await addWorkspaceFolderAsync(true, true, namespaceTreeItem);
 			}),
 		vscode.commands.registerCommand(`${extensionId}.editProject`, async (projectTreeItem?: ProjectTreeItem) => {
-			await addWorkspaceFolderAsync(false, false, <NamespaceTreeItem>projectTreeItem?.parent?.parent, projectTreeItem?.name);
+			await addWorkspaceFolderAsync(false, false, projectTreeItem?.parent?.parent as NamespaceTreeItem, projectTreeItem?.name);
 		}),
 		vscode.commands.registerCommand(`${extensionId}.viewProject`, async (projectTreeItem?: ProjectTreeItem) => {
-			await addWorkspaceFolderAsync(true, false, <NamespaceTreeItem>projectTreeItem?.parent?.parent, projectTreeItem?.name);
+			await addWorkspaceFolderAsync(true, false, projectTreeItem?.parent?.parent as NamespaceTreeItem, projectTreeItem?.name);
 		}),
 		vscode.commands.registerCommand(`${extensionId}.editWebApp`, async (webAppTreeItem?: WebAppTreeItem) => {
-			await addWorkspaceFolderAsync(false, true, <NamespaceTreeItem>webAppTreeItem?.parent?.parent, undefined, webAppTreeItem?.name);
+			await addWorkspaceFolderAsync(false, true, webAppTreeItem?.parent?.parent as NamespaceTreeItem, undefined, webAppTreeItem?.name);
 		}),
 		vscode.commands.registerCommand(`${extensionId}.viewWebApp`, async (webAppTreeItem?: WebAppTreeItem) => {
-			await addWorkspaceFolderAsync(true, true, <NamespaceTreeItem>webAppTreeItem?.parent?.parent, undefined, webAppTreeItem?.name);
+			await addWorkspaceFolderAsync(true, true, webAppTreeItem?.parent?.parent as NamespaceTreeItem, undefined, webAppTreeItem?.name);
 		}),
 		vscode.workspace.onDidChangeWorkspaceFolders(() => view.refreshTree()),
 		vscode.commands.registerCommand(`${extensionId}.signOut`, async () => {
@@ -333,19 +447,21 @@ export function commonActivate(context: vscode.ExtensionContext, view: ServerMan
 				return;
 			}
 			const picks = await vscode.window.showQuickPick(sessions.map((s) => s.account), { canPickMany: true, title: "Pick the accounts to sign out of" });
-			if (!picks?.length) return;
-			return authProvider.removeSessions(picks.map((p) => p.id));
+			if (!picks?.length) { return; }
+			// Map picked accounts back to session ids: account.id preserves username case whereas session.id lowercases it.
+			const pickedIds = new Set(picks.map((p) => p.id));
+			return authProvider.removeSessions(sessions.filter((s) => pickedIds.has(s.account.id)).map((s) => s.id));
 		}),
 		// Listen for relevant configuration changes
 		vscode.workspace.onDidChangeConfiguration((e) => {
 			if (e.affectsConfiguration("intersystems.servers") || e.affectsConfiguration("objectscript.conn")) {
 				view.refreshTree();
 			}
-		})
+		}),
 	);
 
 	// Create our exported API
-	const api = {
+	const api: ServerManagerAPI = {
 		async pickServer(
 			scope?: vscode.ConfigurationScope,
 			options: vscode.QuickPickOptions = {},
@@ -383,28 +499,35 @@ export function commonActivate(context: vscode.ExtensionContext, view: ServerMan
 		 * @param scope Settings scope to look in.
 		 * @param flushCredentialCache Obsolete, has no effect.
 		 * @param options
-		 * @returns { IServerSpec } Server specification object.
+		 * @returns { IServerSpec & { auth: Authorization } } Server specification object.
 		 */
 		async getServerSpec(
 			name: string,
 			scope?: vscode.ConfigurationScope,
 			flushCredentialCache: boolean = false,
 			options?: { hideFromRecents?: boolean, /* Obsolete */ noCredentials?: boolean },
-		): Promise<IServerSpec | undefined> {
+		): Promise<IServerSpec & { auth: Authorization } | undefined> {
 			const spec = await getServerSpec(name, scope);
-			if (spec && !options?.hideFromRecents) {
+			if (spec === undefined) {
+				return undefined;
+			}
+			if (!options?.hideFromRecents) {
 				await view.addToRecents(name);
 			}
 			return spec;
 		},
 
-		getAccount(serverSpec: IServerSpec): vscode.AuthenticationSessionAccountInformation | undefined {
+		getAccount(serverSpec: Pick<IServerSpec, "name" | "username">): vscode.AuthenticationSessionAccountInformation | undefined {
 			return getAccountFromParts(serverSpec.name, serverSpec.username);
 		},
 
 		onDidChangePassword(
 		): vscode.Event<string> {
 			return _onDidChangePassword.event;
+		},
+
+		defaultAuth(): Authorization {
+			return new BasicAuthorization();
 		},
 
 	};
