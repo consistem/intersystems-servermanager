@@ -9,168 +9,191 @@
 [![](https://img.shields.io/badge/InterSystems-Cach%C3%A9-blue.svg)](https://www.intersystems.com/products/cache/)
 [![](https://img.shields.io/badge/InterSystems-Ensemble-blue.svg)](https://www.intersystems.com/products/ensemble/)
 
-> **Note:** The best way to install and use this extension is by installing the [InterSystems ObjectScript Extension Pack](https://marketplace.visualstudio.com/items?itemName=intersystems-community.objectscript-pack) and following the [documentation here](https://docs.intersystems.com/components/csp/docbook/DocBook.UI.Page.cls?KEY=GVSCO).
+> **Documentação oficial:** a referência para instalar, configurar e usar o ambiente de desenvolvimento da Consistem no VS Code é o manual
+> **[VS Code - Ambiente de Desenvolvimento Consistem](https://cuka.consistem.com.br/doc/vs-code-ambiente-de-desenvolvimento-consistem-6rRtIWzvzz)**.
+> Consulte-o antes de seguir qualquer procedimento deste README: ele descreve a configuração suportada internamente, incluindo conexões,
+> cores por ambiente, consultas SQL, Consistem Tools e resolução de erros comuns.
 
-Consistem Server Manager is a Visual Studio Code extension for defining connections to [InterSystems](https://www.intersystems.com/) servers. These definitions can be used by other VS Code extensions when they make connections. One example is the [Consistem ObjectScript extension](https://github.com/consistem/vscode-objectscript) for code editing. The [Launch WebTerminals](https://marketplace.visualstudio.com/items?itemName=georgejames.webterminal-vscode) extension is another.
+O Consistem Server Manager é uma extensão do Visual Studio Code para definir conexões com servidores [InterSystems](https://www.intersystems.com/). Essas definições podem ser usadas por outras extensões do VS Code no momento em que elas se conectam. Um exemplo é a [extensão Consistem ObjectScript](https://github.com/consistem/vscode-objectscript), usada para edição de código. A extensão [Launch WebTerminals](https://marketplace.visualstudio.com/items?itemName=georgejames.webterminal-vscode) é outro exemplo.
 
-## About this fork
+## Sobre este fork
 
-This project is a fork of the official [`intersystems-community/intersystems-servermanager`](https://github.com/intersystems-community/intersystems-servermanager) repository.
+Este projeto é um fork do repositório oficial [`intersystems-community/intersystems-servermanager`](https://github.com/intersystems-community/intersystems-servermanager).
 
-Originally maintained by [InterSystems&reg;](http://www.intersystems.com), this fork is maintained by [Consistem&reg;](https://consistem.com.br/).
+Mantido originalmente pela [InterSystems&reg;](http://www.intersystems.com), este fork é mantido pela [Consistem&reg;](https://consistem.com.br/).
 
-It preserves all features of the upstream project and adds integrations, adjustments, and internal standards adopted by Consistem,
-with a focus on meeting the specific needs of our development ecosystem.
+Ele preserva todos os recursos do projeto de origem e acrescenta integrações, ajustes e padrões internos adotados pela Consistem,
+com foco em atender às necessidades específicas do nosso ecossistema de desenvolvimento.
 
-See the [CHANGELOG](https://marketplace.visualstudio.com/items/consistem-sistemas.consistem-servermanager/changelog) for changes in each release.
+Consulte o [CHANGELOG](CHANGELOG.md) para ver as mudanças de cada release.
 
-# New in Version 3.12 - February 2026
-- Require VS Code 1.109+.
-- Launch Management Portal pages in Integrated Browser.
+## Documentação
 
-# New in Version 3.10 - April 2025
-- Show `objectscript.conn.docker-compose` type connections under 'Current' node.
-- Support running in a web environment.
+| Assunto | Onde consultar |
+| --- | --- |
+| Ambiente de desenvolvimento Consistem (oficial) | [VS Code - Ambiente de Desenvolvimento Consistem](https://cuka.consistem.com.br/doc/vs-code-ambiente-de-desenvolvimento-consistem-6rRtIWzvzz) |
+| Configuração do VS Code com a extensão InterSystems | [Configuração do Ambiente de Desenvolvimento Consistem](https://cuka.consistem.com.br/doc/configuracao-do-ambiente-de-desenvolvimento-consistem-iqzsJjpwG5) |
+| Configuração server-side (`isfs`) | [Configuração Server-Side](https://cuka.consistem.com.br/doc/configuracao-server-side-H7y5eAuSgF) |
+| Resolução de erros de conexão | [Resolução de Erros](https://cuka.consistem.com.br/doc/resolucao-de-erros-uFVNgLxrjz) |
+| Documentação do VS Code | [Visual Studio Code documentation](https://code.visualstudio.com/docs) |
+| Documentação da InterSystems | [Use VS Code as a Development Environment for InterSystems Applications](https://docs.intersystems.com/components/csp/docbook/DocBook.UI.Page.cls?KEY=GVSCO) |
 
-# New in Version 3.8 - November 2024
+# Novidades da versão 3.14 - Agosto de 2026
 
-- Updated the authentication provider to resolve overprompting caused by a VS Code 1.93 change.
-- Added a new function (`getAccount`) to the API surface as a helper for extensions leveraging the authentication provider.
+- Suporte a OAuth2 para autorização em servidores InterSystems.
+- Ao criar uma definição de servidor pela interface, é possível informar scheme, host, porta e prefixo de caminho como uma única URL.
+- Senhas gravadas em texto puro nas configurações deixaram de ser repassadas diretamente às extensões cliente.
+- Antes de solicitar credenciais, é feita uma tentativa de requisição não autenticada quando nenhuma credencial está configurada.
 
-# New in Version 3.6 - January 2024
+# Novidades da versão 3.12 - Fevereiro de 2026
 
-The view container was renamed and given a new icon as part of work integrating the ObjectScript extension's views with it.
+- Exige VS Code 1.109 ou superior.
+- Abertura de páginas do Portal de Gerenciamento no navegador integrado.
 
-# New in Version 3.4 - July 2023
+# Novidades da versão 3.10 - Abril de 2025
 
-- The sequence of prompts displayed when creating a new server definition now includes one where you can optionally enter the `pathPrefix` that is necessary when a single web server is providing REST connectivity to multiple InterSystems servers.
+- Exibição de conexões do tipo `objectscript.conn.docker-compose` sob o nó 'Current'.
+- Suporte à execução em ambiente web.
 
-- A new "Web Applications" tree within each namespace node provides a convenient way to create a workspace folder in which to edit web application files.
+# Novidades da versão 3.8 - Novembro de 2024
 
-> We have removed support for version 2's password storage mechanism. If you have been using the `"intersystemsServerManager.authentication.provider": "none"` setting this will no longer have any effect and your connections will behave as though no passwords have been stored. You can migrate stored passwords by downgrading to Server Manager 3.2 and running the `Migrate Passwords` command.
+- O provedor de autenticação foi atualizado para resolver o excesso de solicitações causado por uma mudança do VS Code 1.93.
+- Foi adicionada uma nova função (`getAccount`) à API, como auxiliar para extensões que utilizam o provedor de autenticação.
+
+# Novidades da versão 3.6 - Janeiro de 2024
+
+O contêiner de visualização foi renomeado e ganhou um novo ícone, como parte do trabalho de integração com as views da extensão ObjectScript.
+
+# Novidades da versão 3.4 - Julho de 2023
+
+- A sequência de prompts exibida ao criar uma nova definição de servidor passou a incluir um passo em que se pode, opcionalmente, informar o `pathPrefix` necessário quando um único servidor web fornece conectividade REST para vários servidores InterSystems.
+
+- Uma nova árvore "Web Applications" dentro de cada nó de namespace oferece uma forma prática de criar uma pasta de workspace para editar arquivos de aplicação web.
+
+> O suporte ao mecanismo de armazenamento de senhas da versão 2 foi removido. Se você utilizava a configuração `"intersystemsServerManager.authentication.provider": "none"`, ela não terá mais efeito e suas conexões se comportarão como se nenhuma senha estivesse armazenada. É possível migrar as senhas armazenadas fazendo downgrade para o Server Manager 3.2 e executando o comando `Migrate Passwords`.
 >
-> VS Code 1.82 (August 2023) is scheduled to drop support for the keytar package used by the v2 mechanism, so you should perform v2 password migration before upgrading to that version.
+> O VS Code 1.82 (agosto de 2023) descontinuou o suporte ao pacote keytar usado pelo mecanismo da v2, portanto a migração de senhas da v2 deve ser feita antes de atualizar para essa versão.
 
-# New in Version 3.2 - October 2022
+# Novidades da versão 3.2 - Outubro de 2022
 
-We are pleased to publish version 3.2 of this extension. This replaces version 2, improving the security of stored passwords by integrating with VS Code's [Authentication Provider API](https://code.visualstudio.com/api/references/vscode-api#AuthenticationProvider). Version 3 was originally created for the [November 2021 InterSystems Security Contest](https://openexchange.intersystems.com/contest/19).
+A versão 3.2 desta extensão substituiu a versão 2, melhorando a segurança das senhas armazenadas por meio da integração com a [Authentication Provider API](https://code.visualstudio.com/api/references/vscode-api#AuthenticationProvider) do VS Code. A versão 3 foi criada originalmente para o [InterSystems Security Contest de novembro de 2021](https://openexchange.intersystems.com/contest/19).
 
-Thanks to [George James Software](https://georgejames.com) for backing this development effort.
+Agradecimentos à [George James Software](https://georgejames.com) pelo apoio a esse desenvolvimento.
 
-## The Authentication Provider
+## O provedor de autenticação
 
-Server Manager implements an authentication provider called 'intersystems-server-credentials', and uses this authentication provider when accessing servers from its own [Server Tree](#the-server-tree).
+O Server Manager implementa um provedor de autenticação chamado 'intersystems-server-credentials' e o utiliza ao acessar servidores a partir da sua própria [árvore de servidores](#a-árvore-de-servidores).
 
-### Signing In
+### Entrando na conta
 
-The first time you expand a server in the tree VS Code displays a modal dialog asking for your permission:
+Na primeira vez que você expande um servidor na árvore, o VS Code exibe uma caixa de diálogo modal pedindo sua permissão:
 
-![Allow an extension](images/README/authenticationProvider-allow.png)
+![Permitir uma extensão](images/README/authenticationProvider-allow.png)
 
-If you allow this and your server definition in `intersystems.servers` does not specify a `username` the next step is:
+Se você permitir e a definição do servidor em `intersystems.servers` não especificar um `username`, o próximo passo é:
 
-![Enter username](images/README/authenticationProvider-username.png)
+![Informar o usuário](images/README/authenticationProvider-username.png)
 
-If you proceed, or if this step was skipped because your server definition includes a username, the next step is:
+Se você prosseguir, ou se esse passo tiver sido pulado porque a definição do servidor já inclui um usuário, o próximo passo é:
 
-![Enter password](images/README/authenticationProvider-password.png)
+![Informar a senha](images/README/authenticationProvider-password.png)
 
-By clicking the 'key' button at the upper right corner of the dialog after typing your password you can save it securely in your workstation's operating system keychain, from where the 'InterSystems Server Credentials' authentication provider will be able to retrieve it after you restart VS Code.
+Ao clicar no botão de 'chave' no canto superior direito da caixa de diálogo, depois de digitar a senha, ela é gravada com segurança no cofre de credenciais do sistema operacional da sua estação de trabalho, de onde o provedor 'InterSystems Server Credentials' poderá recuperá-la após você reiniciar o VS Code.
 
-If instead you press 'Enter' the password will be available only until you restart VS Code.
+Se, em vez disso, você pressionar 'Enter', a senha ficará disponível apenas até você reiniciar o VS Code.
 
-Either way, you are now signed in on the specified account.
+De qualquer forma, você estará autenticado na conta informada.
 
-### Trusting Other Extensions
+### Autorizando outras extensões
 
-When another extension first asks to use an InterSystems Server Credentials account you must either allow this or deny it. For example, when the InterSystems ObjectScript extension uses the new authentication provider you get this dialog after you click the edit pencil button alongside a namespace in the [Server Manager tree](#the-server-tree):
+Quando outra extensão solicita pela primeira vez o uso de uma conta do InterSystems Server Credentials, é necessário permitir ou negar esse acesso. Por exemplo, quando a extensão InterSystems ObjectScript usa o provedor de autenticação, esta caixa de diálogo aparece depois que você clica no botão de lápis ao lado de um namespace na [árvore do Server Manager](#a-árvore-de-servidores):
 
-![Allow another extension](images/README/authenticationProvider-allowObjectScript.png)
+![Permitir outra extensão](images/README/authenticationProvider-allowObjectScript.png)
 
-### Managing Signed In Accounts
+### Gerenciando as contas autenticadas
 
-You can use the menu of VS Code's Accounts icon in the activity bar to manage your signed-in accounts:
+Use o menu do ícone de Contas na barra de atividades do VS Code para gerenciar as contas nas quais você está autenticado:
 
-![Manage account](images/README/authenticationProvider-signedIn.png)
+![Gerenciar conta](images/README/authenticationProvider-signedIn.png)
 
-The 'Manage Trusted Extensions' option lets you remove an extension from the list of those you previously granted access to this InterSystems Server Credentials account:
+A opção 'Manage Trusted Extensions' permite remover uma extensão da lista daquelas às quais você concedeu acesso a esta conta do InterSystems Server Credentials:
 
-![Manage trusted extension list](images/README/authenticationProvider-manageTrusted.png)
+![Gerenciar lista de extensões confiáveis](images/README/authenticationProvider-manageTrusted.png)
 
-The 'Sign Out' option lets you sign out this account after confirmation:
+A opção 'Sign Out' permite encerrar a sessão da conta, mediante confirmação:
 
-![Sign out](images/README/authenticationProvider-signOut.png)
+![Sair da conta](images/README/authenticationProvider-signOut.png)
 
-When signing out an account for which you previously saved the password you will get an option to delete the password, unless you have altered the `intersystemsServerManager.credentialsProvider.deletePasswordOnSignout` setting:
+Ao sair de uma conta cuja senha foi gravada anteriormente, será oferecida a opção de excluir a senha, a menos que você tenha alterado a configuração `intersystemsServerManager.credentialsProvider.deletePasswordOnSignout`:
 
-![Delete password](images/README/authenticationProvider-deletePassword.png)
+![Excluir senha](images/README/authenticationProvider-deletePassword.png)
 
 ---
 
-# New in Version 2 - April 2021
+# Novidades da versão 2 - Abril de 2021
 
-The following features were originally introduced in Server Manager version 2.
+Os recursos a seguir foram introduzidos originalmente na versão 2 do Server Manager.
 
-## The Server Tree
+## A árvore de servidores
 
-Server Manager displays connection definitions as a tree on an InterSystems Tools view:
+O Server Manager exibe as definições de conexão como uma árvore, na view InterSystems Tools:
 
-![Server Manager tree](images/README/tree.png)
+![Árvore do Server Manager](images/README/tree.png)
 
-In this tree you can:
+Nessa árvore você pode:
 
-- Launch the InterSystems Management Portal, either in a VS Code tab or in your default browser.
-- List namespaces.
-- Add namespaces to your VS Code workspace for viewing or editing source code on the server, including web application (formerly CSP) files, with the [ObjectScript extension](https://github.com/intersystems-community/vscode-objectscript).
-- Tag favorite servers.
-- Set icon colors.
-- Focus on recently used connections.
-- Add new servers, and edit existing ones.
+- Abrir o Portal de Gerenciamento da InterSystems, em uma aba do VS Code ou no seu navegador padrão.
+- Listar namespaces.
+- Adicionar namespaces ao seu workspace do VS Code para visualizar ou editar código-fonte no servidor, inclusive arquivos de aplicação web (antigos CSP), com a [extensão ObjectScript](https://github.com/consistem/vscode-objectscript).
+- Marcar servidores como favoritos.
+- Definir cores de ícone.
+- Focar nas conexões usadas recentemente.
+- Adicionar novos servidores e editar os existentes.
 
-In common with the rest of VS Code, Server Manager stores your connection settings in JSON files. VS Code settings are arranged in a hierarchy that you can learn more about [here](https://code.visualstudio.com/docs/getstarted/settings).
+Assim como no restante do VS Code, o Server Manager grava as configurações de conexão em arquivos JSON. As configurações do VS Code seguem uma hierarquia, descrita [aqui](https://code.visualstudio.com/docs/getstarted/settings).
 
-Server Manager can store connection passwords in the native keystore of your workstation's operating system. This is a more secure alternative to you putting them as plaintext in your JSON files.
+O Server Manager pode armazenar as senhas de conexão no cofre nativo do sistema operacional da sua estação de trabalho. Essa é uma alternativa mais segura do que mantê-las em texto puro nos arquivos JSON.
 
-On Windows, Server Manager can create connection entries for all connections you previously defined with the original Windows app called InterSystems Server Manager. This action is available from the '`...`' menu at the top right corner of Server Manager's tree.
+No Windows, o Server Manager pode criar entradas de conexão para todas as conexões que você definiu anteriormente no aplicativo Windows original chamado InterSystems Server Manager. Essa ação está disponível no menu '`...`' do canto superior direito da árvore do Server Manager.
 
-## Defining a New Server
+## Definindo um novo servidor
 
-1. Click the '`+`' button on Server Manager's title bar.
-2. Complete the sequence of prompts.
-3. Expand `All Servers` to see your new entry in the tree.
+1. Clique no botão '`+`' na barra de título do Server Manager.
+2. Preencha a sequência de prompts.
+3. Expanda `All Servers` para ver a nova entrada na árvore.
 
-The server definition is added to your [user-level](https://code.visualstudio.com/docs/getstarted/settings) `settings.json` file and also appears at the top of the 'Recent' folder.
+A definição do servidor é adicionada ao seu arquivo `settings.json` de [nível de usuário](https://code.visualstudio.com/docs/getstarted/settings) e também aparece no topo da pasta 'Recent'.
 
-Optionally use its context menu to set the color of the server icon.
+Opcionalmente, use o menu de contexto para definir a cor do ícone do servidor.
 
-The 'star' button that appears when you hover over the row lets you add the server to the `Favorites` list at the top of the tree.
+O botão de 'estrela', exibido ao passar o mouse sobre a linha, permite adicionar o servidor à lista `Favorites`, no topo da árvore.
 
-## Viewing and Editing Source Code
+## Visualizando e editando código-fonte
 
-1. Expand the target server, then expand its 'Namespaces' folder.
-2. Hover over the target namespace to reveal its command buttons.
-3. Click the 'edit pencil' icon to add an `isfs://server:namespace/` folder to your VS Code workspace, or use the 'viewing eye' icon to add an `isfs-readonly://server:namespace/` one.
-4. To add a folder that gives you access to server-side web application files (for example, CSP files), hold the <kbd>Alt</kbd> / <kbd>Option</kbd> key down as you click the button for the type of access you want.
+1. Expanda o servidor desejado e, em seguida, a pasta 'Namespaces'.
+2. Passe o mouse sobre o namespace desejado para exibir os botões de comando.
+3. Clique no ícone de 'lápis' para adicionar uma pasta `isfs://servidor:namespace/` ao seu workspace do VS Code, ou use o ícone de 'olho' para adicionar uma pasta `isfs-readonly://servidor:namespace/`.
+4. Para adicionar uma pasta que dê acesso aos arquivos de aplicação web do servidor (por exemplo, arquivos CSP), mantenha a tecla <kbd>Alt</kbd> / <kbd>Option</kbd> pressionada ao clicar no botão do tipo de acesso desejado.
 
-Learn more about `isfs` and `isfs-readonly` folders in the [documentation](https://docs.intersystems.com/components/csp/docbook/DocBook.UI.Page.cls?KEY=GVSCO_ssworkflow).
+Saiba mais sobre pastas `isfs` e `isfs-readonly` na [documentação da Consistem](https://cuka.consistem.com.br/doc/configuracao-server-side-H7y5eAuSgF) e na [documentação da InterSystems](https://docs.intersystems.com/components/csp/docbook/DocBook.UI.Page.cls?KEY=GVSCO_ssworkflow).
 
-> If you are already doing client-side editing of your code (for example, managing it with Git), be sure you understand the consequences of also doing server-side editing using `isfs`. The [documentation](https://docs.intersystems.com/components/csp/docbook/DocBook.UI.Page.cls?KEY=GVSCO_intro) outlines the differences between client-side and server-side editing. If in doubt, limit yourself to `isfs-readonly` by only using the eye icon.
+> Se você já faz a edição de código no lado cliente (por exemplo, versionando com Git), certifique-se de compreender as consequências de também editar no lado servidor usando `isfs`. A [documentação](https://docs.intersystems.com/components/csp/docbook/DocBook.UI.Page.cls?KEY=GVSCO_intro) descreve as diferenças entre a edição client-side e server-side. Na dúvida, limite-se ao `isfs-readonly`, usando apenas o ícone de olho.
 
-## The 'Current' Folder
+## A pasta 'Current'
 
-When you have a folder or a workspace (including a multi-root one) open in VS Code, Server Manager displays a 'Current' node at the start of its tree if your workspace references any server defined in Server Manager. The linking happens automatically if you added workspace folders from Server Manager as described above. If you are using the client-side mode of working, your `objectscript.conn` setting needs to use the `server` property.
+Quando há uma pasta ou um workspace aberto no VS Code (inclusive multi-root), o Server Manager exibe um nó 'Current' no início da árvore, caso o workspace referencie algum servidor definido no Server Manager. O vínculo acontece automaticamente se as pastas do workspace foram adicionadas pelo Server Manager, conforme descrito acima. Se você trabalha no modo client-side, a configuração `objectscript.conn` precisa usar a propriedade `server`.
 
-## Amending and Removing Servers
+## Alterando e removendo servidores
 
-To manage your server definitions, including changing the username it connects with, [edit the relevant JSON file](https://code.visualstudio.com/docs/getstarted/settings).
+Para gerenciar suas definições de servidor, inclusive o usuário com o qual a conexão é feita, [edite o arquivo JSON correspondente](https://code.visualstudio.com/docs/getstarted/settings).
 
-1. From a server's context menu, or from Server Manager's top-right '`...`' menu, choose `Edit Settings`. This opens VS Code's Settings Editor and filters its contents.
+1. No menu de contexto de um servidor, ou no menu '`...`' do canto superior direito do Server Manager, escolha `Edit Settings`. Isso abre o editor de configurações do VS Code já com o conteúdo filtrado.
 
-![Edit Settings](images/README/editSettings.png)
+![Editar configurações](images/README/editSettings.png)
 
-2. Click the `Edit in settings.json` link.
+2. Clique no link `Edit in settings.json`.
 
-In this example two connections have been defined:
+Neste exemplo, duas conexões foram definidas:
 
 ```json
 "intersystems.servers": {
@@ -182,7 +205,7 @@ In this example two connections have been defined:
 			"pathPrefix": "/iris/dev"
 		},
 		"username": "alice",
-		"description": "Development server serviced by central web host over HTTPS"
+		"description": "Servidor de desenvolvimento atendido pelo web host central via HTTPS"
 	},
 	"my-local": {
 		"webServer": {
@@ -190,49 +213,71 @@ In this example two connections have been defined:
 			"host": "127.0.0.1",
 			"port": 52773
 		},
-		"description": "My local IRIS instance"
+		"description": "Minha instância local do IRIS"
 	},
 	"/default": "my-local"
 }
 ```
 
-The JSON editor offers the usual [IntelliSense](https://code.visualstudio.com/docs/editor/intellisense) as you work in this structure.
+O editor JSON oferece o [IntelliSense](https://code.visualstudio.com/docs/editor/intellisense) habitual enquanto você trabalha nessa estrutura.
 
-Notice how you can add a `description` property to each connection. This will be shown in the hover in Server Manager's tree, and alongside the entry if a server quickpick is used.
+Repare que é possível adicionar uma propriedade `description` a cada conexão. Ela é exibida no hover da árvore do Server Manager e ao lado da entrada quando um quickpick de servidores é usado.
 
-Servers are displayed in the quickpick in the order they are defined in the JSON file. The exception is that if a server name is set as the value of the `/default` property (see example above) it will be shown first in the list.
+Os servidores são exibidos no quickpick na ordem em que estão definidos no arquivo JSON. A exceção é o servidor cujo nome estiver no valor da propriedade `/default` (veja o exemplo acima): ele é mostrado em primeiro lugar.
+
+### Autenticação com OAuth2
+
+A partir da versão 3.14, uma definição de servidor pode usar OAuth2 / OpenID Connect em vez de usuário e senha. Para isso, adicione a propriedade `oauth2` à definição, informando o `authority` (URL do emissor no seu provedor de identidade) e o `clientId`. A propriedade opcional `scopes` acrescenta escopos além de `openid profile email`:
+
+```json
+"intersystems.servers": {
+	"dev-oauth": {
+		"webServer": {
+			"scheme": "https",
+			"host": "webhost.local",
+			"port": 443
+		},
+		"oauth2": {
+			"authority": "https://login.microsoftonline.com/SEU-TENANT-ID/v2.0",
+			"clientId": "SEU-CLIENT-ID"
+		}
+	}
+}
+```
+
+> Gravar a senha em texto puro na propriedade `password` está obsoleto e é fortemente desaconselhado. Prefira o botão de 'chave' no prompt de senha, que grava a credencial no cofre do sistema operacional.
 
 ---
 
-## Technical Notes
+## Notas técnicas
 
-### Colors, Favorites and Recents
+### Cores, favoritos e recentes
 
-These features use VS Code's extension-private global state storage. Data is not present in your `settings.json` file.
+Esses recursos usam o armazenamento de estado global privado da extensão, no VS Code. Os dados não ficam no seu arquivo `settings.json`.
 
-### The 'All Servers' Folder
+### A pasta 'All Servers'
 
-The `All Servers` tree respects the optional `/default` setting in the `intersystems.servers` JSON.
+A árvore `All Servers` respeita a configuração opcional `/default` no JSON de `intersystems.servers`.
 
-If a server has been named in `/default` it is promoted to the top of the list, which is otherwise presented in alphabetical order.
+Se um servidor estiver indicado em `/default`, ele é promovido ao topo da lista, que no restante é apresentada em ordem alfabética.
 
 ---
 
-## Information for VS Code Extension Developers - How To Leverage Server Manager
+## Informações para desenvolvedores de extensões do VS Code - como utilizar o Server Manager
 
-The NPM package [`@intersystems-community/intersystems-servermanager`](https://www.npmjs.com/package/@intersystems-community/intersystems-servermanager) defines the types used by the API which this extension exports. It also declares some constants.
+O pacote NPM [`@intersystems-community/intersystems-servermanager`](https://www.npmjs.com/package/@intersystems-community/intersystems-servermanager) define os tipos usados pela API exportada por esta extensão. Ele também declara algumas constantes.
 
-An extension XYZ needing to connect to InterSystems servers should include `"@intersystems-community/intersystems-servermanager": "^3.8.0"` in the `"devDependencies"` object in its `package.json`.
+Uma extensão XYZ que precise se conectar a servidores InterSystems deve incluir `"@intersystems-community/intersystems-servermanager": "^3.14.1"` no objeto `"devDependencies"` do seu `package.json`.
 
-It might also define Server Manager as a dependency in its `package.json` like this:
+Ela também pode declarar o Server Manager como dependência no `package.json`, assim:
 
 ```json
   "extensionDependencies": [
-    "intersystems-community.servermanager"
+    "consistem-sistemas.consistem-servermanager"
   ],
 ```
 
-Alternatively the `activate` method of XYZ can detect whether the extension is already available, then offer to install it if not:
+Como alternativa, o método `activate` da XYZ pode detectar se a extensão já está disponível e, se não estiver, oferecer sua instalação:
 
 ```ts
 import * as serverManager from "@intersystems-community/intersystems-servermanager";
@@ -243,7 +288,7 @@ import * as serverManager from "@intersystems-community/intersystems-servermanag
 ```ts
 let extension = vscode.extensions.getExtension(serverManager.EXTENSION_ID);
 if (!extension) {
-	// Optionally ask user for permission
+	// Opcionalmente, peça permissão ao usuário
 	// ...
 
 	await vscode.commands.executeCommand(
@@ -257,24 +302,26 @@ if (!extension.isActive) {
 }
 ```
 
-XYZ can then use the extension's API to obtain the properties of a named server definition:
+> Neste fork, `serverManager.EXTENSION_ID` corresponde a `consistem-sistemas.consistem-servermanager`.
+
+A XYZ pode então usar a API da extensão para obter as propriedades de uma definição de servidor:
 
 ```ts
 const serverManagerApi: serverManager.ServerManagerAPI = extension.exports;
 if (serverManagerApi && serverManagerApi.getServerSpec) {
-	// defensive coding
-	const serverSpec: serverManager.IServerSpec | undefined =
+	// programação defensiva
+	const serverSpec: serverManager.IServerSpecWithAuth | undefined =
 		await serverManagerApi.getServerSpec(serverName);
 }
 ```
 
-The `username` and `password` properties will only be present if defined in the settings JSON. Storage of `password` there is deprecated and strongly discouraged.
+As credenciais não vêm preenchidas na especificação retornada. Elas são representadas pela propriedade `auth`, um objeto `Authorization` que abstrai tanto a autenticação básica (usuário e senha) quanto OAuth2. As propriedades `username` e `password` de `IServerSpec` estão obsoletas: use `auth.username` e obtenha as credenciais a partir de `auth`.
 
-To obtain the password with which to connect, use code like this which will also prompt for a username if absent:
+Para resolver as credenciais antes de fazer uma requisição, use um código como este, que também solicita o usuário caso ele esteja ausente:
 
 ```ts
-if (typeof serverSpec.password === "undefined") {
-	const scopes = [serverSpec.name, serverSpec.username || ""];
+if (serverSpec?.auth && !serverSpec.auth.resolved()) {
+	const scopes = [serverSpec.name, serverSpec.auth.username];
 	const account = serverManagerApi.getAccount(serverSpec);
 	let session = await vscode.authentication.getSession(
 		serverManager.AUTHENTICATION_PROVIDER,
@@ -288,31 +335,35 @@ if (typeof serverSpec.password === "undefined") {
 			{ createIfNone: true, account },
 		);
 	}
-	if (session) {
-		serverSpec.username =
-			session.scopes[1].toLowerCase() === "unknownuser"
-				? ""
-				: session.scopes[1];
-		serverSpec.password = session.accessToken;
+	if (session?.accessToken) {
+		serverSpec.auth.resolve({
+			accessToken: session.accessToken,
+			username:
+				session.scopes[1].toLowerCase() === "unknownuser"
+					? ""
+					: session.scopes[1],
+		});
 	}
 }
 ```
 
-To offer the user a quickpick of servers:
+Depois que `auth.resolved()` retornar verdadeiro, use `auth.credentials` ou `auth.httpAuthorizationHeader` para autenticar a requisição.
+
+Para oferecer ao usuário um quickpick de servidores:
 
 ```ts
 const serverName: string = await serverManagerApi.pickServer();
 ```
 
-To obtain an array of server names:
+Para obter um array de nomes de servidores:
 
 ```ts
 const allServerNames: serverManager.IServerName[] =
 	await serverManagerApi.getServerNames();
 ```
 
-For up-to-date details of the API, including result types and available parameters, review the source code of the extension's `activate` method [here](https://github.com/intersystems-community/intersystems-servermanager/blob/master/src/extension.ts).
+Para detalhes atualizados da API, incluindo tipos de retorno e parâmetros disponíveis, consulte o código-fonte do método `commonActivate` da extensão [aqui](https://github.com/consistem/intersystems-servermanager/blob/master/src/commonActivate.ts) e as definições de tipos em [`types/index.d.ts`](types/index.d.ts).
 
 ---
 
-<div>Activity Bar icon made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+<div>Ícone da barra de atividades feito por <a href="https://www.freepik.com" title="Freepik">Freepik</a>, de <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
