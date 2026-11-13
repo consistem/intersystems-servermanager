@@ -41,6 +41,8 @@ These instructions apply to files under `.github/workflows/`.
 - These come from upstream. Keep fork changes to them minimal, so upstream syncs merge cleanly.
 - `build` and `beta` stay active: every push to `master` builds, lints, tests and creates a GitHub pre-release with the `.vsix`.
 - The `publish` job (Marketplace and Open VSX) is **off** in this fork: it runs only when the repository variable `ENABLE_MARKETPLACE_PUBLISH` is `'true'`. The variable is not set, because the fork does not publish to the Marketplace.
+- In its place, the fork-only `release-vsix` job in `main.yml` attaches the `.vsix` to the GitHub release on every `released` event (it reuses the `.vsix` that `build` tested, so `build` uploads it on releases too). It runs only while `ENABLE_MARKETPLACE_PUBLISH` is not `'true'`, so it never races with `publish`, which uploads its own `.vsix` to the same release.
+- A `release` event runs the workflow file of the tagged commit, not the one on `master`. A tag created before a workflow change does not get it.
 - Before setting `ENABLE_MARKETPLACE_PUBLISH` to `'true'`:
     - `main.yml` publishes with trusted publishing (`vsce publish --oidc`, `ovsx publish --trusted-publishing`): configure it for the `consistem-sistemas` publisher in the VS Marketplace and in Open VSX. There is no token fallback; without it the job fails.
     - `prerelease.yml` still publishes with the `VSCE_TOKEN` / `OVSX_TOKEN` secrets.
