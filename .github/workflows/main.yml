@@ -74,7 +74,7 @@ jobs:
         run: |
           npx @vscode/vsce package -o ${{ steps.set-version.outputs.name }}.vsix
       - uses: actions/upload-artifact@v7
-        if: github.event_name != 'release'
+        # Fork: also on release, so the release-vsix job can attach the .vsix (see AGENTS.md)
         with:
           name: ${{ steps.set-version.outputs.name }}.vsix
           path: ${{ steps.set-version.outputs.name }}.vsix
@@ -169,3 +169,30 @@ jobs:
           git add package.json
           git commit -m 'auto bump version with release [skip ci]'
           git push
+  release-vsix:
+    # Fork: attaches the .vsix to the GitHub release while publish is off (see AGENTS.md)
+    if: github.event_name == 'release' && vars.ENABLE_MARKETPLACE_PUBLISH != 'true'
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: meta
+          path: .
+      - name: Set an output
+        id: set-version
+        run: |
+          set -x
+          echo "name=`cat meta.name`" >> $GITHUB_OUTPUT
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ steps.set-version.outputs.name }}.vsix
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.event.release.tag_name }}
+          files: ${{ steps.set-version.outputs.name }}.vsix
+          fail_on_unmatched_files: true
+          token: ${{ secrets.GITHUB_TOKEN }}
