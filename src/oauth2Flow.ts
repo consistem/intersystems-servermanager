@@ -1,10 +1,10 @@
+import { IOAuth2Spec } from "@intersystems-community/intersystems-servermanager";
 import axios from "axios";
 import * as vscode from "vscode";
+import { EXTENSION_ID } from "./commonActivate";
 import { logger } from "./logger";
 
-export interface IOAuth2Config {
-	authority: string;
-	clientId: string;
+export interface IOAuth2Config extends IOAuth2Spec {
 	audience: string;
 }
 
@@ -57,7 +57,8 @@ export async function performOAuth2Login(label: string, config: IOAuth2Config): 
 	if (!endpoints) { return undefined; }
 	const { authorizationEndpoint, tokenEndpoint } = endpoints;
 
-	const callbackUri = vscode.Uri.parse(`${vscode.env.uriScheme}://intersystems-community.servermanager/oauth2-callback`);
+	// VS Code only delivers the callback to the extension whose ID is the URI authority
+	const callbackUri = vscode.Uri.parse(`${vscode.env.uriScheme}://${EXTENSION_ID}/oauth2-callback`);
 
 	// "offline_access" requests a refresh token so we can renew silently
 	const scopes = ["openid", "profile", "email", "offline_access"];

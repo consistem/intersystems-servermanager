@@ -1,25 +1,26 @@
-import { IServerName, IServerSpec, Authorization } from "@intersystems-community/intersystems-servermanager";
+import { BasicAuthorization, IServerName } from "@intersystems-community/intersystems-servermanager";
 import * as vscode from "vscode";
 import { getServerNames } from "../api/getServerNames";
-import { getServerSpec } from "../api/getServerSpec";
+import { getServerSpec, NormalizedServerSpec } from "../api/getServerSpec";
 import { getServerSummary } from "../api/getServerSummary";
-import { OBJECTSCRIPT_EXTENSIONID, BasicAuthorization } from "../commonActivate";
+import { OBJECTSCRIPT_EXTENSIONID } from "../commonActivate";
 import { makeRESTRequest } from "../makeRESTRequest";
 
 const SETTINGS_VERSION = "v1";
 
-// tslint:disable-next-line: no-namespace
-namespace StorageIds {
-	export const favorites = `tree.${SETTINGS_VERSION}.favorites`;
-	export const recents = `tree.${SETTINGS_VERSION}.recents`;
-	export const iconColors = `tree.${SETTINGS_VERSION}.iconColors`;
-}
+const StorageIds = {
+	favorites: `tree.${SETTINGS_VERSION}.favorites`,
+	recents: `tree.${SETTINGS_VERSION}.recents`,
+	iconColors: `tree.${SETTINGS_VERSION}.iconColors`,
+};
 
 const favoritesMap = new Map<string, null>();
 
 const colorsMap = new Map<string, string>();
 
 let recentsArray: string[] = [];
+
+let treeView: vscode.TreeView<SMTreeItem>;
 
 export class ServerManagerView {
 
@@ -31,12 +32,11 @@ export class ServerManagerView {
 		this._globalState = context.globalState;
 		const treeDataProvider = new SMNodeProvider();
 		this._treeDataProvider = treeDataProvider;
-		const treeView = vscode.window.createTreeView(
+		treeView = vscode.window.createTreeView(
 			"intersystems-community_servermanager",
 			{ treeDataProvider, showCollapseAll: true },
 		);
 		context.subscriptions.push(treeView);
-		treeDataProvider.view = treeView;
 
 		// load favoritesMap
 		const favorites = this._globalState.get<string[]>(StorageIds.favorites) || [];
@@ -104,18 +104,13 @@ export class ServerManagerView {
 
 }
 
-// tslint:disable-next-line: max-classes-per-file
 class SMNodeProvider implements vscode.TreeDataProvider<SMTreeItem> {
 
-	// tslint:disable-next-line: max-line-length
 	private _onDidChangeTreeData: vscode.EventEmitter<SMTreeItem | undefined | void> = new vscode.EventEmitter<SMTreeItem | undefined | void>();
-	// tslint:disable-next-line: member-ordering
 	public readonly onDidChangeTreeData: vscode.Event<SMTreeItem | undefined | void> = this._onDidChangeTreeData.event;
 
-	// tslint:disable-next-line: member-ordering
-	public view: vscode.TreeView<SMTreeItem>;
 	private _firstRevealDone = false;
-	private _firstRevealItem: SMTreeItem;
+	private _firstRevealItem: SMTreeItem | undefined;
 
 	public refresh(item: SMTreeItem | undefined): void {
 		this._onDidChangeTreeData.fire(item);
@@ -198,7 +193,7 @@ class SMNodeProvider implements vscode.TreeDataProvider<SMTreeItem> {
 
 			setTimeout(async () => {
 				if (!this._firstRevealDone && this._firstRevealItem) {
-					await this.view.reveal(this._firstRevealItem, { select: false, expand: 1 });
+					await treeView?.reveal(this._firstRevealItem, { select: false, expand: 1 });
 					this._firstRevealDone = true;
 				}
 			},
@@ -215,7 +210,7 @@ export interface ServerParams {
 	sorted?: boolean;
 	serverSummary?: IServerName;
 	serverName?: string;
-	serverSpec?: IServerSpec & { auth: Authorization };
+	serverSpec?: NormalizedServerSpec;
 	serverApiVersion?: number;
 	ns?: string;
 }
@@ -228,18 +223,15 @@ interface ISMItem {
 	tooltip?: string | vscode.MarkdownString;
 	description?: string;
 	codiconName?: string;
-	// tslint:disable-next-line: ban-types
-	getChildren?: Function;
+	getChildren?(element: SMTreeItem, params?: ServerParams): SMTreeItem[] | undefined | Promise<SMTreeItem[] | undefined>;
 	params?: ServerParams;
 }
 
-// tslint:disable-next-line: max-classes-per-file
 export class SMTreeItem extends vscode.TreeItem {
 
 	public readonly parent: SMTreeItem | undefined;
 	public readonly params?: ServerParams;
-	// tslint:disable-next-line: ban-types
-	private readonly _getChildren?: Function;
+	private readonly _getChildren?: ISMItem["getChildren"];
 
 	constructor(item: ISMItem) {
 		const collapsibleState = item.getChildren
@@ -377,7 +369,6 @@ function recentServers(element: SMTreeItem, params?: ServerParams): ServerTreeIt
 	return children;
 }
 
-// tslint:disable-next-line: max-classes-per-file
 export class ServerTreeItem extends SMTreeItem {
 	public readonly name: string;
 	constructor(
@@ -448,7 +439,7 @@ async function serverFeatures(element: ServerTreeItem, params?: ServerParams): P
 	return children;
 }
 
-async function specFromServerSummary(serverSummary: IServerName): Promise<IServerSpec & { auth: Authorization } | undefined> {
+async function specFromServerSummary(serverSummary: IServerName): Promise<NormalizedServerSpec | undefined> {
 	const { name, description, detail, scope } = serverSummary;
 	const spec = await getServerSpec(name, scope);
 	const dockerDetail = detail.match(/^http:\/\/localhost:(\d+)\/$/);
@@ -464,11 +455,9 @@ async function specFromServerSummary(serverSummary: IServerName): Promise<IServe
 	return spec;
 }
 
-// tslint:disable-next-line: max-classes-per-file
 export class FeatureTreeItem extends SMTreeItem {
 }
 
-// tslint:disable-next-line: max-classes-per-file
 export class OfflineTreeItem extends FeatureTreeItem {
 	public readonly name: string;
 	constructor(
@@ -489,13 +478,12 @@ export class OfflineTreeItem extends FeatureTreeItem {
 	}
 }
 
-// tslint:disable-next-line: max-classes-per-file
 export class NamespacesTreeItem extends FeatureTreeItem {
 	public readonly name: string;
 	constructor(
 		element: ISMItem,
 		serverName: string,
-		serverSpec: IServerSpec & { auth: Authorization },
+		serverSpec: NormalizedServerSpec,
 		username: string,
 	) {
 		const parentFolderId = element.parent?.id || "";
@@ -553,14 +541,13 @@ function serverItemIsWsFolder(server?: SMTreeItem): boolean {
 	return typeof server?.label == "string" && ((server.label.includes("(") && server.label.endsWith(")")) || server.label.startsWith("docker:"));
 }
 
-// tslint:disable-next-line: max-classes-per-file
 export class NamespaceTreeItem extends SMTreeItem {
 	public readonly name: string;
 	constructor(
 		element: ISMItem,
 		name: string,
 		serverName: string,
-		serverSpec: IServerSpec & { auth: Authorization },
+		serverSpec: NormalizedServerSpec,
 		serverApiVersion: number,
 	) {
 		const parentFolderId = element.parent?.id || "";
@@ -598,7 +585,7 @@ export class ProjectsTreeItem extends FeatureTreeItem {
 	constructor(
 		element: ISMItem,
 		serverName?: string,
-		serverSpec?: IServerSpec & { auth: Authorization },
+		serverSpec?: NormalizedServerSpec,
 		serverApiVersion: number = 0,
 	) {
 		const parentFolderId = element.parent?.id || "";
@@ -651,7 +638,7 @@ async function namespaceProjects(element: ProjectsTreeItem, params?: ServerParam
 				vscode.window.showErrorMessage(message);
 				return undefined;
 			}
-			response.data.result.content.map((project) => {
+			response.data.result.content.map((project: { Name: string; Description: string }) => {
 				children.push(new ProjectTreeItem({ parent: element, label: name, id: name }, project.Name, project.Description, params.serverApiVersion!));
 			});
 		}
@@ -687,7 +674,7 @@ export class WebAppsTreeItem extends FeatureTreeItem {
 	constructor(
 		element: ISMItem,
 		serverName: string | undefined,
-		serverSpec: IServerSpec & { auth: Authorization } | undefined,
+		serverSpec: NormalizedServerSpec | undefined,
 		serverApiVersion: number = 0,
 	) {
 		const parentFolderId = element.parent?.id || "";

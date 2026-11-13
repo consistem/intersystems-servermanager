@@ -1,7 +1,7 @@
 import { IServerSpec } from "@intersystems-community/intersystems-servermanager";
 import * as vscode from "vscode";
 import { Uri } from "vscode";
-import { extensionId } from "../commonActivate";
+import { EXTENSION_ID } from "../commonActivate";
 
 export async function getPortalUri(
 	name: string,
@@ -11,7 +11,7 @@ export async function getPortalUri(
 ): Promise<Uri | undefined> {
 
 	// Use our own API so that the Recent folder updates with our activity
-	const myApi = vscode.extensions.getExtension(extensionId)?.exports;
+	const myApi = vscode.extensions.getExtension(EXTENSION_ID)?.exports;
 
 	const spec: IServerSpec | undefined = await myApi.getServerSpec(name, scope);
 	if (typeof spec !== "undefined") {

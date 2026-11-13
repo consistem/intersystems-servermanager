@@ -104,6 +104,10 @@ Se, em vez disso, você pressionar 'Enter', a senha ficará disponível apenas a
 
 De qualquer forma, você estará autenticado na conta informada.
 
+### Acesso não autenticado
+
+Para conectar sem credenciais, defina `"username": "UnknownUser"`. Omitir o `username` não solicita acesso não autenticado; nesse caso, o usuário será pedido normalmente.
+
 ### Autorizando outras extensões
 
 Quando outra extensão solicita pela primeira vez o uso de uma conta do InterSystems Server Credentials, é necessário permitir ou negar esse acesso. Por exemplo, quando a extensão InterSystems ObjectScript usa o provedor de autenticação, esta caixa de diálogo aparece depois que você clica no botão de lápis ao lado de um namespace na [árvore do Server Manager](#a-árvore-de-servidores):

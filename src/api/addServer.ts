@@ -1,6 +1,7 @@
+import { IJSONServerSpec } from "@intersystems-community/intersystems-servermanager";
 import * as vscode from "vscode";
 import { promptOAuth2Authority, promptOAuth2ClientId } from "../oauth2Prompts";
-import { IServerSetting } from "../serverSetting";
+import { updateConfig } from "../serverSetting";
 import { getServerNames } from "./getServerNames";
 
 export async function addServer(
@@ -32,26 +33,26 @@ export async function addServer(
 	if (description === undefined) { return; }
 	description = description.trim();
 	let url = undefined as { scheme: string; host: string; port: string; pathPrefix: string } | undefined;
-	let hostOrURL = await vscode.window.showInputBox({
+	const hostOrURL = await vscode.window.showInputBox({
 		ignoreFocusOut: true,
 		placeHolder: "http(s)://host(:port)/pathPrefix  or  host",
 		title: "Enter the base URL used to connect to the server, or just its hostname/IP",
 		validateInput: (value) => {
-			value = value.trim()
+			value = value.trim();
 			try {
 				const localURL = new URL(value);
 				const scheme = localURL.protocol.slice(0, -1);
 				if (!["http", "https"].includes(scheme)) {
-					return `Invalid scheme (${scheme}): must be either http or https`
+					return `Invalid scheme (${scheme}): must be either http or https`;
 				}
 				const host = localURL.hostname;
 				const port = localURL.port || (scheme === "https" ? "443" : "80");
-				const portValidation = validatePort(port)
+				const portValidation = validatePort(port);
 				if (portValidation) {
-					return `Invalid port (${port}): ` + portValidation
+					return `Invalid port (${port}): ` + portValidation;
 				}
 				url = { scheme, host, port, pathPrefix: localURL.pathname };
-				return
+				return;
 			} catch {
 				url = undefined;
 				return validateHost(value);
@@ -63,7 +64,7 @@ export async function addServer(
 		if (!value.length) { return "Required"; }
 		try {
 			if (new URL(`http://${value}:80/`).hostname === value.toLowerCase()) {
-				return
+				return;
 			}
 		} catch { }
 		return "Invalid host";
@@ -107,7 +108,7 @@ export async function addServer(
 		{ ignoreFocusOut: true, title: "Select the authentication method" },
 	))?.label;
 	if (authMethod === undefined) { return; }
-	let authDetails: Pick<IServerSetting, "username" | "oauth2">;
+	let authDetails: Pick<IJSONServerSpec, "username" | "oauth2">;
 	if (authMethod === "OAuth2") {
 		const authority = (await promptOAuth2Authority(name))?.trim();
 		if (!authority) { return; }
@@ -126,9 +127,9 @@ export async function addServer(
 		username = username.trim();
 		authDetails = { username };
 	} else if (authMethod === "Unauthenticated") {
-		authDetails = {}
+		authDetails = { username: "UnknownUser" };
 	} else {
-		throw Error(`Unreachable! ${authMethod} must be either "Basic Auth", "OAuth2", or "Unauthenticated".`)
+		throw Error(`Unreachable! ${authMethod} must be either "Basic Auth", "OAuth2", or "Unauthenticated".`);
 	}
 	const scheme = url?.scheme ?? await new Promise<string | undefined>((resolve) => {
 		let result: string;
@@ -152,29 +153,23 @@ export async function addServer(
 		quickPick.show();
 	});
 	if (scheme === undefined) { return; }
-	const levelStr =
+	const [levelStr, level] =
 		target == vscode.ConfigurationTarget.WorkspaceFolder
-			? "workspace-folder"
+			? ["workspace-folder", "workspaceFolderValue"] as const
 			: target == vscode.ConfigurationTarget.Workspace
-				? "workspace"
-				: "user";
+				? ["workspace", "workspaceValue"] as const
+				: ["user", "globalValue"] as const;
 	try {
-		const config = vscode.workspace.getConfiguration(
-			"intersystems",
-			scope,
-		);
-		const serversInspection = config.inspect("servers");
-		const servers = (
-			target == vscode.ConfigurationTarget.WorkspaceFolder ? serversInspection?.workspaceFolderValue :
-				target == vscode.ConfigurationTarget.Workspace ? serversInspection?.workspaceValue :
-					serversInspection?.globalValue
-		) ?? {};
-		servers[name] = {
-			webServer: { scheme, host, port: +port, pathPrefix },
-			...(description ? { description } : {}),
-			...authDetails,
-		};
-		await config.update("servers", servers, target);
+		await updateConfig(scope, (targets) => ({
+			[level]: {
+				...targets[level],
+				[name]: {
+					webServer: { scheme, host, port: +port, pathPrefix },
+					...(description ? { description } : {}),
+					...authDetails,
+				}
+			}
+		}));
 		vscode.window.showInformationMessage(`Server '${name}' stored in ${levelStr}-level settings.`);
 		return name;
 	} catch (error) {
