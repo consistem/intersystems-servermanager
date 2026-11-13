@@ -1,15 +1,14 @@
-import { Authorization, IServerName, IServerSpec, ResolvedAuthorization, ServerManagerAPI } from "@intersystems-community/intersystems-servermanager";
+import { Authorization, BasicAuthorization, IJSONServerSpec, IOAuth2Spec, IServerName, IServerSpec, ResolvedAuthorization, ServerManagerAPI } from "@intersystems-community/intersystems-servermanager";
 import * as vscode from "vscode";
 import { addServer } from "./api/addServer";
 import { getPortalUri } from "./api/getPortalUri";
 import { getServerNames } from "./api/getServerNames";
-import { getServerSpec } from "./api/getServerSpec";
+import { getServerSpec, NormalizedServerSpec } from "./api/getServerSpec";
 import { getServerSummary } from "./api/getServerSummary";
 import { pickServer } from "./api/pickServer";
 import { AUTHENTICATION_PROVIDER, ServerManagerAuthenticationProvider } from "./authenticationProvider";
 import { initLogger } from "./logger";
 import { logout, serverSessions } from "./makeRESTRequest";
-import { OAuth2Config } from "./serverSetting";
 import { NamespaceTreeItem, ProjectTreeItem, ServerManagerView, ServerTreeItem, SMTreeItem, WebAppTreeItem } from "./ui/serverManagerView";
 
 export const extensionId = "intersystems-community.servermanager";
@@ -23,63 +22,10 @@ export function getAccountFromParts(serverName: string, userName?: string): vsco
 	return accountId ? { id: accountId, label: `${userName} on ${serverName}` } : undefined;
 }
 
-export class BasicAuthorization implements Authorization {
-	#username?: string;
-	#password?: string;
-	constructor(username?: string, password?: string) {
-		this.#username = username;
-		this.#password = password;
-	}
-
-	public get username(): string {
-		return this.#username || "";
-	}
-
-	public get password(): string | undefined {
-		return this.#password;
-	}
-
-	public get accessToken(): string | undefined {
-		return this.#password;
-	}
-
-	public get httpAuthorizationHeader(): string {
-		return `Basic ${Buffer.from(`${this.#username}:${this.#password}`).toString("base64")}`;
-	}
-
-	public resolved(): this is ResolvedAuthorization {
-		return this.username !== "" && this.#password !== undefined;
-	}
-
-	public resolve({ accessToken, username }): this is ResolvedAuthorization {
-		this.#username = username ?? this.#username;
-		this.#password = accessToken ?? this.#password;
-		return this.resolved();
-	}
-
-	public clear(): asserts this is Authorization {
-		this.#password = undefined;
-	}
-
-	public get credentials(): { auth: { username: string; password: string }; headers?: Record<string, string> } {
-		return {
-			auth: {
-				username: this.username,
-				password: this.password!,
-			},
-			headers: {},
-		};
-	}
-
-	public clone(): BasicAuthorization {
-		return new BasicAuthorization(this.#username, this.#password);
-	}
-}
-
 export class OAuth2Authorization implements Authorization {
 	#username?: string;
 	#bearer?: string;
-	constructor(public readonly oauth2: OAuth2Config, bearer?: string) {
+	constructor(public readonly oauth2: IOAuth2Spec, bearer?: string) {
 		this.#bearer = bearer;
 	}
 
@@ -93,7 +39,7 @@ export class OAuth2Authorization implements Authorization {
 		return this.#bearer ? true : false;
 	}
 
-	public resolve({ accessToken, username }): this is ResolvedAuthorization {
+	public resolve({ accessToken, username }: { accessToken?: string; username?: string }): this is ResolvedAuthorization {
 		// empty accessTokens are ignored.
 		if (accessToken) {
 			this.#bearer = accessToken;
@@ -152,8 +98,8 @@ export function commonActivate(context: vscode.ExtensionContext, view: ServerMan
 			if (pathParts && pathParts.length === 4) {
 				const serverName = pathParts[1];
 				const namespace = pathParts[3];
-				const serverSetting = await getServerSpec(serverName);
-				if (serverSetting) {
+				const server = await getServerSpec(serverName);
+				if (server) {
 					const isfsExtension = vscode.extensions.getExtension(OBJECTSCRIPT_EXTENSIONID);
 					if (isfsExtension) {
 						if (!isfsExtension.isActive) {
@@ -315,7 +261,7 @@ export function commonActivate(context: vscode.ExtensionContext, view: ServerMan
 			// Attempt to open the correct JSON file
 			server = server instanceof ServerTreeItem ? server : undefined;
 			const scope = server?.params?.serverSummary?.scope;
-			const servers = vscode.workspace.getConfiguration("intersystems", scope).inspect("servers");
+			const servers = vscode.workspace.getConfiguration("intersystems", scope).inspect<Record<string, IJSONServerSpec>>("servers");
 			const openJSONArg = { revealSetting: { key: "intersystems.servers" } };
 			const revealServer = (): void => {
 				// Find the start of the server's settings block
@@ -337,7 +283,7 @@ export function commonActivate(context: vscode.ExtensionContext, view: ServerMan
 				}
 			};
 			// Only WorkspaceFolder objects have an index.
-			if (server && servers?.workspaceFolderValue?.hasOwnProperty(server.name) && typeof (scope as vscode.WorkspaceFolder)?.index == "number") {
+			if (server && servers?.workspaceFolderValue?.[server.name] && typeof (scope as vscode.WorkspaceFolder)?.index == "number") {
 				// Open the workspace folder settings file. Need to use showTextDocument because the
 				// "workbench.action.openFolderSettingsFile" command always prompts the user.
 				vscode.window.showTextDocument(
@@ -348,10 +294,10 @@ export function commonActivate(context: vscode.ExtensionContext, view: ServerMan
 					// If there's an error, fall back to showing the UI
 					vscode.commands.executeCommand("workbench.action.openSettings", `@ext:${EXTENSION_ID}`);
 				});
-			} else if (server && servers?.workspaceValue?.hasOwnProperty(server.name)) {
+			} else if (server && servers?.workspaceValue?.[server.name]) {
 				// Open the workspace settings file
 				vscode.commands.executeCommand("workbench.action.openWorkspaceSettingsFile", openJSONArg).then(revealServer);
-			} else if (server && servers?.globalValue?.hasOwnProperty(server.name)) {
+			} else if (server && servers?.globalValue?.[server.name]) {
 				// Open the user settings.json
 				vscode.commands.executeCommand("workbench.action.openSettingsJson", openJSONArg).then(revealServer);
 			} else {
@@ -499,14 +445,14 @@ export function commonActivate(context: vscode.ExtensionContext, view: ServerMan
 		 * @param scope Settings scope to look in.
 		 * @param flushCredentialCache Obsolete, has no effect.
 		 * @param options
-		 * @returns { IServerSpec & { auth: Authorization } } Server specification object.
+		 * @returns { NormalizedServerSpec } Server specification object.
 		 */
 		async getServerSpec(
 			name: string,
 			scope?: vscode.ConfigurationScope,
 			flushCredentialCache: boolean = false,
 			options?: { hideFromRecents?: boolean, /* Obsolete */ noCredentials?: boolean },
-		): Promise<IServerSpec & { auth: Authorization } | undefined> {
+		): Promise<NormalizedServerSpec | undefined> {
 			const spec = await getServerSpec(name, scope);
 			if (spec === undefined) {
 				return undefined;
