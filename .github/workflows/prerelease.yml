@@ -95,7 +95,8 @@ jobs:
           files: ${{ needs.build.outputs.name }}.vsix
   publish:
     needs: build
-    if: github.event_name == 'release' && needs.build.outputs.taggedbranch == 'prerelease'
+    # Fork: off unless the repository variable ENABLE_MARKETPLACE_PUBLISH is 'true' (see AGENTS.md)
+    if: vars.ENABLE_MARKETPLACE_PUBLISH == 'true' && github.event_name == 'release' && needs.build.outputs.taggedbranch == 'prerelease'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

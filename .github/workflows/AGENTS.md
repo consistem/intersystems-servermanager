@@ -36,6 +36,16 @@ These instructions apply to files under `.github/workflows/`.
     - Log merge conflict and require manual resolution on the sync branch.
     - Optional Google Chat alert can notify maintainers about conflicts and include manual resolution commands.
 
+## Release Workflows (`main.yml`, `prerelease.yml`)
+
+- These come from upstream. Keep fork changes to them minimal, so upstream syncs merge cleanly.
+- `build` and `beta` stay active: every push to `master` builds, lints, tests and creates a GitHub pre-release with the `.vsix`.
+- The `publish` job (Marketplace and Open VSX) is **off** in this fork: it runs only when the repository variable `ENABLE_MARKETPLACE_PUBLISH` is `'true'`. The variable is not set, because the fork does not publish to the Marketplace.
+- Before setting `ENABLE_MARKETPLACE_PUBLISH` to `'true'`:
+    - `main.yml` publishes with trusted publishing (`vsce publish --oidc`, `ovsx publish --trusted-publishing`): configure it for the `consistem-sistemas` publisher in the VS Marketplace and in Open VSX. There is no token fallback; without it the job fails.
+    - `prerelease.yml` still publishes with the `VSCE_TOKEN` / `OVSX_TOKEN` secrets.
+    - Both jobs check out with the `TOKEN` secret (missing in this fork) and push a version bump straight to `master`, which breaks the Branch Governance rule above. Adapt that step (for example, to open a PR) or allow the push explicitly.
+
 ## Repository Setup Requirements
 
 - GitHub Actions enabled.
